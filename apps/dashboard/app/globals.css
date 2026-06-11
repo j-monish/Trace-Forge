@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 38 36% 96%;
+  --foreground: 0 0% 12%;
+  --card: 36 43% 99%;
+  --card-foreground: 0 0% 12%;
+  --popover: 36 43% 99%;
+  --popover-foreground: 0 0% 12%;
+  --primary: 28 21% 53%;
+  --primary-foreground: 36 43% 99%;
+  --secondary: 36 24% 93%;
+  --secondary-foreground: 0 0% 12%;
+  --muted: 34 26% 94%;
+  --muted-foreground: 0 0% 42%;
+  --accent: 35 40% 64%;
+  --accent-foreground: 0 0% 12%;
+  --destructive: 9 41% 66%;
+  --destructive-foreground: 0 0% 12%;
+  --border: 36 25% 88%;
+  --input: 36 25% 88%;
+  --ring: 35 40% 64%;
+  --success: 130 17% 54%;
+  --warning: 35 40% 64%;
+  --danger: 9 41% 66%;
+  --font-sans: "Avenir Next", "Segoe UI", sans-serif;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(200, 169, 126, 0.16), transparent 32%),
+    radial-gradient(circle at top right, rgba(161, 134, 111, 0.12), transparent 34%),
+    linear-gradient(180deg, #f8f5f0 0%, #f3eee6 100%);
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: rgba(200, 169, 126, 0.24);
+  color: hsl(var(--foreground));
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply border bg-[rgba(255,255,255,0.72)] backdrop-blur-sm;
+  }
+
+  .panel-grid {
+    background-image:
+      linear-gradient(rgba(161, 134, 111, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(161, 134, 111, 0.08) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+}

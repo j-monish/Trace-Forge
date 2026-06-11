@@ -1,0 +1,171 @@
+services:
+  # ── Auth Service ────────────────────────────────────────────────────────────
+  auth-service:
+    build: ../../services/auth
+    container_name: auth-service
+    ports:
+      - "8001:8001"
+    environment:
+      JWT_SECRET: archaIc-secret-key-2024
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - archaIc-net
+
+  # ── DB Service ──────────────────────────────────────────────────────────────
+  db-service:
+    build: ../../services/db
+    container_name: db-service
+    ports:
+      - "8002:8002"
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - archaIc-net
+
+  # ── Product/Cart Service ────────────────────────────────────────────────────
+  product-service:
+    build: ../../services/product
+    container_name: product-service
+    ports:
+      - "8003:8003"
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8001
+      DB_SERVICE_URL: http://db-service:8002
+      REQUEST_TIMEOUT: "8"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      db-service:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8003/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - archaIc-net
+
+  # ── Observability Stack ─────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ../../observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - archaIc-net
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686" # Web UI
+      - "4318:4318" # OTLP HTTP receiver
+    networks:
+      - archaIc-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - ../../observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - jaeger
+  # ── Payment Service ─────────────────────────────────────────────────────────
+  payment-service:
+    build: ../../services/payment
+    container_name: payment-service
+    ports:
+      - "8004:8004"
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8001
+      DB_SERVICE_URL: http://db-service:8002
+      REQUEST_TIMEOUT: "8"
+      STRIPE_API_KEY: ${STRIPE_API_KEY:-sk_test_dummy}
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      db-service:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8004/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - archaIc-net
+
+  # ── AI Operator Service ─────────────────────────────────────────────────────
+  ai-operator:
+    build: ../../services/ai-operator
+    container_name: ai-operator
+    ports:
+      - "8005:8005"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    networks:
+      - archaIc-net
+
+  # ── ML Anomaly Detector Service ─────────────────────────────────────────────
+  anomaly-detector:
+    build: ../../services/anomaly-detector
+    container_name: anomaly-detector
+    ports:
+      - "8006:8006"
+    environment:
+      - PROMETHEUS_URL=http://prometheus:9090
+      - AI_OPERATOR_URL=http://ai-operator:8005
+    networks:
+      - archaIc-net
+    depends_on:
+      - prometheus
+      - ai-operator
+
+networks:
+  archaIc-net:
+    driver: bridge
