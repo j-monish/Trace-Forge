@@ -1,4 +1,4 @@
-# archAIc — AI-Powered Observability & Self-Healing System
+# TraceForge— AI-Powered Observability & Self-Healing System
 
 > **Layer 1: Microservices Foundation**
 > The distributed system that generates real logs, traces, and metrics for the AI intelligence layer.
